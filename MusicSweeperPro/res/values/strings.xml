@@ -3,5 +3,11 @@
 
     <string name="app_name">Music Sweeper Pro</string>
     <string name="title_mp_detail">File Detail</string>
+    <string name="menu_search">Search</string>
+	<string name="menu_refresh">Refresh</string>    
+    <string name="menu_share">Share</string>
+    <string name="menu_delete">Delete</string>
+    <string name="working">Working!</string>
+    <string name="settings">Settings</string>
 
 </resources>

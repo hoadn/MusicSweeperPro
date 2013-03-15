@@ -1,123 +1,128 @@
 package com.musicsweeperpro.file;
 
+import java.io.File;
+import java.net.URI;
 import java.util.ArrayList;
-import java.util.HashMap;
+import java.util.Collections;
+import java.util.HashSet;
 import java.util.List;
-import java.util.Map;
+import java.util.Set;
 
-/**
- * Helper class for providing sample content for user interfaces created by
- * Android template wizards.
- * <p>
- * TODO: Replace all uses of this class before publishing your app.
- */
+import android.content.SharedPreferences;
+import android.os.Environment;
+import android.util.Log;
+
 public class FileHelper {
+	private static final String TAG = "FileHelper";
+//	public static List<File> GROUPS = new ArrayList<File>();
+	private List<String> filePathExclusions = new ArrayList<String>();
+	private boolean externalStorage, extraExternalStorage;
+	private String extraExternalStorageDirString;
+	private String rootDirString;
+	private static SharedPreferences prefs = null;
 
-	/**
-	 * An array of sample (dummy) items.
-	 */
-	public static List<DummyFile> ITEMS = new ArrayList<DummyFile>();
-	/**
-	 * An array of sample (dummy) groups.
-	 */
-	public static List<DummyFolder> GROUPS = new ArrayList<DummyFolder>();	
+	public FileHelper(SharedPreferences prefs2) {
+		prefs = prefs2;
+	}
 
-	/**
-	 * A map of sample (dummy) items, by ID.
-	 */
-	public static Map<String, DummyFile> ITEM_MAP = new HashMap<String, DummyFile>();
+	public List<String> getAudioFolderPaths(URI uri) {
+		List<String> list = new ArrayList<String>();
+		if (hasExternalStorage()) {
+			File file = new File(uri);
+			if (file != null) {
+				buildFilePathExclusions();
+				Set<String> set = new HashSet<String>();
+				getAudioFolders(file, set);
+				if (!set.isEmpty()) {
+					list.addAll(set);
+					Collections.sort(list);
+					return list;
+				}
+			}
+		}
+		Log.e(TAG, "No Files Found!");
+		return list;		
+	}
+
+	/** recursively finds and returns file paths of folders that contain audio files  */
+	private void getAudioFolders(File file, Set<String> files) {
+		if (file != null && !filePathExclusions.contains(file.getAbsolutePath())) {
+			if (file.isDirectory()) {
+				if (containsAudioFiles(file)) {
+					files.add(file.getAbsolutePath());
+				}
+				File[] children = file.listFiles();
+				if (children != null) {
+					for (File child : children) {
+						getAudioFolders(child, files);
+					}
+				}
+			}
+		}
+	}
+
+	private boolean containsAudioFiles(File file) {
+		File[] children = file.listFiles();
+		if (children != null) {
+			for (File child : children) {
+				if (isMusicFile(child)) {
+					return true;
+				}
+			}
+		}
+		return false;
+	}
+
+	private boolean isMusicFile(File file) {
+		if (prefs != null) {
+			return (file.isFile() && ( 
+					(file.getName().endsWith(".mp3") && prefs.getBoolean("mp3", true)) 
+					|| (file.getName().endsWith(".wma") && prefs.getBoolean("wma", true))
+					|| (file.getName().endsWith(".ogg") && prefs.getBoolean("ogg", true))
+					|| (file.getName().endsWith(".vqf") && prefs.getBoolean("vqf", true))
+					|| (file.getName().endsWith(".aac") && prefs.getBoolean("aac", true))
+					|| (file.getName().endsWith(".wav") && prefs.getBoolean("wav", true))
+					));
+		} else {
+		return (file.isFile() && (file.getName().endsWith(".mp3")
+			|| file.getName().endsWith(".wma") || file.getName().endsWith(".ogg")
+			|| file.getName().endsWith(".vqf") || file.getName().endsWith(".aac") || file.getName().endsWith(".wav")));
+		}
+	}
+
+	public boolean hasExternalStorage() {
+		if (!this.externalStorage) {
+			File root = Environment.getExternalStorageDirectory();
+		    if (root.canWrite()){
+		    	this.externalStorage = true;
+		    	this.rootDirString = root.getAbsolutePath();
+		    }
+		}
+		return this.externalStorage;
+	}
 	
-	/**
-	 * A map of sample (dummy) groups, by ID.
-	 */
-	public static Map<String, DummyFolder> GROUP_MAP = new HashMap<String, DummyFolder>();
-
-	static {
-		// Add 3 sample items.
-		addGroup("1", "Group 1", new DummyFile[]{
-				new DummyFile("1", "1", "Item 1"),
-				new DummyFile("2", "1", "Item 2"),
-				new DummyFile("3", "1", "Item 3")
-				});
-		addGroup("2", "Group 2", new DummyFile[]{
-				new DummyFile("1", "2", "Item 1"),
-				new DummyFile("2", "2", "Item 2"),
-				new DummyFile("3", "2", "Item 3")
-				});		
-		//addItem(new DummyFile("1", "Item 1"));
-		//addItem(new DummyFile("2", "Item 2"));
-		//addItem(new DummyFile("3", "Item 3"));
-	}
-
-	private static void addGroup(String id, String content, DummyFile[] items) {
-		Map<String, DummyFile> dummies = new HashMap<String, DummyFile>();
-		List<DummyFile> dummieList = new ArrayList<DummyFile>();
-		for (DummyFile item: items) {
-			dummies.put(item.id, item);
-			dummieList.add(item);
-			
-			ITEMS.add(item);
-			ITEM_MAP.put(item.id, item);
+	//TODO: figure out how to get mnt/sd_card/external_sd using the environment variable
+	public boolean hasExtraExternalStorage()
+	{
+		if (!this.externalStorage) {
+		    File root = Environment.getExternalStorageDirectory();
+		    if (root.canWrite()){
+		    	String extraStoragePath = root.getAbsolutePath() + "/external_sd";
+		    	File extraStorageRoot = new File(extraStoragePath);
+		    	if (extraStorageRoot.exists()) {
+		    		extraExternalStorage = true;
+		    		extraExternalStorageDirString = extraStorageRoot.getAbsolutePath();
+		    	}
+		    }
 		}
-		DummyFolder group = new DummyFolder(id, content, dummieList);
-		GROUPS.add(group);
-	}
-
-	/**
-	 * A dummy item representing a piece of content.
-	 */
-	public static class DummyFile {
-		public String id;
-		public String groupId;
-		public String content;
-
-		public DummyFile(String id, String groupId, String content) {
-			this.id = id;
-			this.groupId = groupId;
-			this.content = content;		
-		}
-
-		@Override
-		public String toString() {
-			return content;
-		}
+		return extraExternalStorage;
 	}
 	
-	/**
-	 * A dummy item representing a piece of content.
-	 */
-	public static class DummyFolder {
-		public String id;
-		public String content;
-		public Map<String, DummyFile> dummies = new HashMap<String, DummyFile>();
-		List<DummyFile> dummieList = new ArrayList<DummyFile>();
-
-		public List<DummyFile> getDummieList() {
-			return dummieList;
-		}
-
-		public DummyFolder(String id, String content, DummyFile[] items) {
-			this.id = id;
-			this.content = content;
-			for (DummyFile item: items) {
-				dummies.put(item.id, item);
-				dummieList.add(item);
-			}			
-		}
-
-		public DummyFolder(String id2, String content2,
-				List<DummyFile> dummieList) {
-			this.id = id2;
-			this.content = content2;
-			this.dummieList = dummieList;
-			for (DummyFile item: dummieList) {
-				dummies.put(item.id, item);
-			}	
-		}
-
-		@Override
-		public String toString() {
-			return content;
+	private void buildFilePathExclusions() {
+		if (filePathExclusions == null || filePathExclusions.isEmpty()) {
+			filePathExclusions = new ArrayList<String>();
+			filePathExclusions.add((this.rootDirString+"/backups"));
+			filePathExclusions.add((this.rootDirString+"/.android_secure"));
 		}
 	}	
 }

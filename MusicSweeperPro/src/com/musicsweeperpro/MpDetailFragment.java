@@ -1,14 +1,13 @@
 package com.musicsweeperpro;
 
+import java.io.File;
+
 import android.os.Bundle;
 import android.support.v4.app.Fragment;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.TextView;
-
-import com.expandablelistexample.R;
-import com.musicsweeperpro.file.FileHelper;
 
 /**
  * A fragment representing a single Mp3 detail screen. This fragment is either
@@ -23,11 +22,6 @@ public class MpDetailFragment extends Fragment {
 	public static final String ARG_ITEM_ID = "item_id";
 
 	/**
-	 * The dummy content this fragment is presenting.
-	 */
-	private FileHelper.DummyFile mItem;
-
-	/**
 	 * Mandatory empty constructor for the fragment manager to instantiate the
 	 * fragment (e.g. upon screen orientation changes).
 	 */
@@ -38,12 +32,9 @@ public class MpDetailFragment extends Fragment {
 	public void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
 
-		if (getArguments().containsKey(ARG_ITEM_ID)) {
-			// Load the dummy content specified by the fragment
-			// arguments. In a real-world scenario, use a Loader
-			// to load content from a content provider.
-			mItem = FileHelper.ITEM_MAP.get(getArguments().getString(
-					ARG_ITEM_ID));
+		if (getArguments().containsKey(MainActivity.FILE_PATH)) {
+			String filePath = getArguments().getString(MainActivity.FILE_PATH);
+			((MpDetailActivity)getActivity()).mItem = new File(filePath);
 		}
 	}
 
@@ -54,9 +45,12 @@ public class MpDetailFragment extends Fragment {
 				container, false);
 
 		// Show the dummy content as text in a TextView.
-		if (mItem != null) {
+		if (((MpDetailActivity)getActivity()).mItem == null) {
 			((TextView) rootView.findViewById(R.id.mp_detail))
-					.setText(mItem.content);
+					.setText("Item Not Found!");
+		} else {
+			((TextView) rootView.findViewById(R.id.mp_detail))
+			.setText(((MpDetailActivity)getActivity()).mItem.getPath());			
 		}
 
 		return rootView;
